@@ -1,6 +1,6 @@
 #include "sdlgraphs.h"
 
-Graph(float xMin, float xMax, float xScale, yMin, yMax, yScale, int width, int height, Uint32 color) :
+Graph::Graph(float xMin, float xMax, float xScale, float yMin, float yMax, float yScale, int width, int height, SDL_Window* wnd) :
 	m_xMin(xMin),
 	m_xMax(xMax),
 	m_xScale(xScale),
@@ -8,12 +8,13 @@ Graph(float xMin, float xMax, float xScale, yMin, yMax, yScale, int width, int h
 	m_yMax(yMax),
 	m_yScale(yScale),
 	m_width(width),
-	m_height(height),
-	m_color(color)
+	m_height(height)
 {
+
+	setColor(0xFF, 0xFF, 0xFF);
 }
 
-~Graph()
+Graph::~Graph()
 {
 	SDL_FreeSurface(m_workingSurface);
 
@@ -21,12 +22,12 @@ Graph(float xMin, float xMax, float xScale, yMin, yMax, yScale, int width, int h
 		delete m_workingSurface;
 }
 
-SDL_Surface* getSurface() const
+SDL_Surface* Graph::getSurface() const
 {
-
+	return m_workingSurface;
 }
 
-void drawGrid(int thickness, int length)
+void Graph::drawGrid(int thickness, int length)
 {
 	int w, h;
 
@@ -39,23 +40,100 @@ void drawGrid(int thickness, int length)
 	int countX, countY;
 
 	int pitchX, pitchY;
-	pitchX = _getWidthFromCoordinate(m_xScale) - width;
-	pitchY = _getHeightFromCoordinate(m_yScale) - height;
+	pitchX = _getWidthFromCoordinate(m_xScale) - w;
+	pitchY = _getHeightFromCoordinate(m_yScale) - h;
+
+	for (countX = 0; countX < m_width; ++countX)
+	{
+		if ((countX - w) % pitchX == 0)
+		{
+			for (countY = h - length; countY <= h + length; ++countY)
+				printPixelByWindow(countX, countY);
+		}
+		else
+		{
+			for (countY = h - thickness; countY <= h + thickness; ++countY)
+				printPixelByWindow(countX, countY);
+		}
+	}
+
+	for (countY = 0; countY < m_height; ++countY)
+	{
+		if (((countY - h) % pitchY) == 0)
+		{
+			for (countX = w - length; countX <= w + length; ++countX)
+				printPixelByWindow(countX, countY);
+		}
+		else
+		{
+			for (countX = w - thickness; countX <= w + thickness; ++countX)
+				printPixelByWindow(countX, countY);
+		}
+	}
 }
 
-void update()
+void Graph::update()
+{
+	SDL_UpdateWindowSurface(m_window);
+}
+
+void Graph::clear()
+{
+	SDL_FillRect(m_workingSurface, NULL, 0x00000000);
+	update();
+}
+
+void Graph::printPixel(float x, float y)
+{
+	Uint32 *pixel;
+
+	pixel = _getPixelFromCoordinates(x, y);
+	if (pixel != nullptr)
+		*pixel = m_color;
+}
+
+void Graph::printPixelByWindow(int x, int y)
+{
+	Uint32 *pixel;
+
+	pixel = _getPixelFromWindow(x, y);
+
+	if (pixel != nullptr)
+		*pixel = m_color;
+}
+
+void Graph::printPixelColor(float x, float y, Uint32 color)
+{
+	Uint32 *pixel;
+
+	pixel = _getPixelFromCoordinates(x, y);
+
+	if (pixel != nullptr)
+		*pixel = m_color;
+}
+
+void Graph::printPixelByWindowColor(int x, int y, Uint32 color)
+{
+	Uint32 *pixel;
+
+	pixel = _getPixelFromWindow(x, y);
+
+	if (pixel != nullptr)
+		*pixel = m_color;
+}
+
+int Graph::writeBMP(const std::string& filename)
 {
 
 }
 
-void clear()
+void Graph::setTargetWindow(SDL_Window *wnd)
 {
+	if (!wnd)
+		return;
 
-}
-
-int writeBMP(const std::string& filename)
-{
-
+	m_window = wnd;
+	m_workingSurface = SDL_GetWindowSurface(wnd);
 }
 
 int Graph::_getWidthFromCoordinate(float x)
@@ -77,13 +155,13 @@ Uint32* Graph::_getPixelFromCoordinates(float x, float y)
 	Uint32 *pixel;
 
 	int realWidth = _getWidthFromCoordinate(x);
-	int relHeight = _getHeightFromCoordinate(y);
+	int realHeight = _getHeightFromCoordinate(y);
 
 	if (realHeight < 0 || realHeight >= m_height || realWidth < 0 || realWidth >= m_width)
 		return nullptr;
 	else
 	{
-		pixel = m_workingSurface->pixels;
+		pixel = (Uint32*)m_workingSurface->pixels;
 
 		Uint32 w, h;
 		w = realWidth;
@@ -104,8 +182,8 @@ Uint32* Graph::_getPixelFromWindow(int x, int y)
 	{
 		Uint32 w, h;
 		w = x;
-		height = y * m_width;
-		pixel = (Uint32*)m_workingSurface->pixels + width + height;
+		h = y * m_width;
+		pixel = (Uint32*)m_workingSurface->pixels + w + h;
 
 		return pixel;
 	}

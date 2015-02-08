@@ -13,7 +13,7 @@ class Graph
 {
 public:
 
-	Graph(float xMin, float xMax, float xScale, yMin, yMax, yScale, int width, int height, Uint32 color);
+	Graph(float, float, float, float, float, float, int, int, SDL_Window *wnd = 0);
 
 	~Graph();
 
@@ -25,7 +25,17 @@ public:
 
 	void clear();
 
+	void printPixel(float, float);
+
+	void printPixelByWindow(int, int);
+
+	void printPixelColor(float, float, Uint32);
+
+	void printPixelByWindowColor(int, int, Uint32);
+
 	int writeBMP(const std::string& filename);
+
+	void setTargetWindow(SDL_Window *wnd);
 
 	inline void setColor(int r, int g, int b) { m_color = RGB(r, g, b); }
 
@@ -53,7 +63,7 @@ public:
 
 	inline void setYScale(float yScale) { m_yScale = yScale; }
 
-	inline float getYScale() const { m_yScale = yScale; }
+	inline float getYScale() const { return m_yScale; }
 
 	inline void setSize(int width, int height) { m_width = width; m_height = height; }
 
@@ -93,6 +103,9 @@ private:
 
 	Uint32 m_color;
 
+	SDL_Window *m_window;
 	SDL_Surface *m_workingSurface;
 
 };
+
+#endif
