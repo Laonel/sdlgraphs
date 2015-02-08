@@ -16,10 +16,6 @@ Graph::Graph(float xMin, float xMax, float xScale, float yMin, float yMax, float
 
 Graph::~Graph()
 {
-	SDL_FreeSurface(m_workingSurface);
-
-	if (m_workingSurface)
-		delete m_workingSurface;
 }
 
 SDL_Surface* Graph::getSurface() const
@@ -122,9 +118,26 @@ void Graph::printPixelByWindowColor(int x, int y, Uint32 color)
 		*pixel = m_color;
 }
 
-int Graph::writeBMP(const std::string& filename)
+void Graph::writeBMP(const std::string& filename)
 {
+	FILE *file = fopen(filename.c_str(), "wb");
+	if (file == nullptr)
+	{
+		fprintf(stderr, "Error opening file\n");
+		exit(1);
+	}
+	if (!_writeBMPHeader(file, m_width, m_height))
+	{
+		fprintf(stderr, "Error writing BMP header\n");
+		exit(2);
+	}
+	if (!_writeBMPData(file))
+	{
+		fprintf(stderr, "Error writing BMP data\n");
+		exit(3);
+	}
 
+	fclose(file);
 }
 
 void Graph::setTargetWindow(SDL_Window *wnd)
@@ -191,10 +204,73 @@ Uint32* Graph::_getPixelFromWindow(int x, int y)
 
 int Graph::_writeBMPHeader(FILE *file, int width, int height)
 {
+	int size;
+	if (width % 4 == 0)
+		size = 54 + 3 * width * height;
+	else
+		size = 54 + 3 * width * height + height * (4 - width % 4);
 
+	int temp[0x36] = 
+	{
+		0x42, 0x4D, // magic number
+		size%0x100, size/0x100, size/0x10000, size/0x1000000, // size of BMP file
+		0x00, 0x00,
+		0x00, 0x00,
+		0x36, 0x00, 0x00, 0x00,
+		0x28, 0x00, 0x00, 0x00,
+		width%0x100, width/0x100, width/0x10000, width/0x1000000, // width of bitmap in pixels
+		height%0x100, height/0x100, height/0x10000, height/0x1000000, // height of the bitmap in pixels
+		0x01, 0x00, // number color planes being used
+		0x18, 0x00, // number of bits/pixel
+		0x00, 0x00, 0x00, 0x00, // BI_RBG, no compression
+		0x10, 0x00, 0x00, 0x00,	// size of raw BMP data (after header)
+		0x13, 0x0B, 0x00, 0x00,	// horizontal reso (pixels/meter)
+		0x13, 0x0B, 0x00, 0x00,	// vertical reso (pixels/meter)
+		0x00, 0x00, 0x00, 0x00,	// number of colors in the palette
+		0x00, 0x00, 0x00, 0x00	// all colors are important
+	};
+
+	for (int i = 0; i < 0x36; ++i)
+		if (fputc(temp[i], file) == EOF)
+			return 0;
+
+	return 1;
 }
 
-int Graph::_writeBMPDate(FILE *file)
+int Graph::_writeBMPData(FILE *file)
 {
+	int padding;
+	if (m_width % 4 == 0)
+		padding = 0;
+	else
+		padding = 4 - (3 * m_width) % 4;
 
+	Uint32 *pixel;
+	Uint8 *subpixel;
+
+	int widthCount, heightCount;
+
+	for (heightCount = 0; heightCount < m_height; ++heightCount)
+	{
+		for (widthCount = 0; widthCount < m_width; ++widthCount)
+		{
+			pixel = _getPixelFromWindow(widthCount, m_height - heightCount - 1);
+			if (pixel != nullptr)
+			{
+				subpixel = (Uint8*)pixel;
+				if (fputc(subpixel[0], file) == EOF)
+					return 0;
+				if (fputc(subpixel[1], file) == EOF)
+					return 0;
+				if (fputc(subpixel[2], file) == EOF)
+					return 0;
+			}
+		}
+
+		for (int i = 0; i < padding; ++i)
+			if (fputc(0x00, file) == EOF)
+				return 0;
+	}
+
+	return 1;
 }

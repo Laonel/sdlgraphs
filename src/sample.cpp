@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	if (SDL_Init(SDL_INIT_VIDEO) != 0)
 		return 1;
 
-	SDL_Window *wnd = SDL_CreateWindow("Graph Test", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+	SDL_Window *wnd = SDL_CreateWindow("Graph Test", 100, 100, 800, 600, SDL_WINDOW_SHOWN);
 	if (wnd == nullptr)
 	{
 		std::cout << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
@@ -17,12 +17,12 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	Graph graph(-180.f, 180.f, 60.f, -1.f, 1.f, 0.2f, 640, 480);
+	Graph graph(-180.f, 180.f, 60.f, -1.f, 1.f, 0.2f, 800, 600);
 	graph.setTargetWindow(wnd);
 
 	graph.clear();
 
-	graph.drawGrid(1, 1);
+	graph.drawGrid(1, 0);
 
 	graph.update();
 
@@ -37,7 +37,6 @@ int main(int argc, char *argv[])
         graph.printPixel(x, y);
         graph.update();
     }
-
     
     bool quit = false;
     while (!quit)
@@ -47,6 +46,12 @@ int main(int argc, char *argv[])
 	    {
 	    	if (event.type == SDL_QUIT)
 	    		quit = true;
+
+	    	if (event.type == SDL_KEYDOWN)
+	    	{
+	    		if (event.key.keysym.sym == SDLK_s)
+	    			graph.writeBMP("graph.bmp");
+	    	}
 	    }
 	}
 

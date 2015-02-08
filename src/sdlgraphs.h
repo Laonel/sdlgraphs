@@ -33,7 +33,7 @@ public:
 
 	void printPixelByWindowColor(int, int, Uint32);
 
-	int writeBMP(const std::string& filename);
+	void writeBMP(const std::string& filename);
 
 	void setTargetWindow(SDL_Window *wnd);
 
@@ -87,7 +87,7 @@ private:
 
 	int _writeBMPHeader(FILE *file, int width, int height);
 
-	int _writeBMPDate(FILE *file);
+	int _writeBMPData(FILE *file);
 
 private:
 
